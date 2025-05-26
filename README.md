@@ -7,3 +7,5 @@ Two Collections:
 ###
 
 User and Post. Approriate methods and routes for each collection.
+
+
