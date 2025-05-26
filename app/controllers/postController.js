@@ -4,8 +4,72 @@ const Post = require("../models/Post");
 // GET All Posts
 exports.getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find().populate("userId", "firstName lastName");
-    res.status(200).json({ data: posts });
+    // Build filter
+    const filter = {};
+
+    //Regex on title
+    if (req.query.title) {
+      filter.title = { $regex: req.query.title, $options: "i" };
+    }
+
+    // 2) Date range gte / lte
+    if (req.query.startDate || req.query.endDate) {
+      filter.createdAt = {};
+      if (req.query.startDate)
+        filter.createdAt.$gte = new Date(req.query.startDate);
+      if (req.query.endDate)
+        filter.createdAt.$lte = new Date(req.query.endDate);
+    }
+
+    // gt / lt
+    if (req.query.viewsGt || req.query.viewsLt) {
+      filter.views = {};
+      if (req.query.viewsGt) filter.views.$gt = Number(req.query.viewsGt);
+      if (req.query.viewsLt) filter.views.$lt = Number(req.query.viewsLt);
+    }
+
+    // $ne
+    if (req.query.excludeUser) {
+      filter.userId = { ...(filter.userId || {}), $ne: req.query.excludeUser };
+    }
+
+    // $in
+    if (req.query.userIds) {
+      filter.userId = {
+        ...(filter.userId || {}),
+        $in: req.query.userIds.split(","),
+      };
+    }
+
+    // $nin
+    if (req.query.excludeUserIds) {
+      filter.userId = {
+        ...(filter.userId || {}),
+        $nin: req.query.excludeUserIds.split(","),
+      };
+    }
+
+    // Field selection
+    const select = req.query.fields
+      ? req.query.fields.split(",").join(" ")
+      : "";
+
+    // Sorting
+    const sortBy = req.query.sort || "-createdAt";
+
+    // Pagination defaults
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Number(req.query.limit) || 10);
+    const skip = (page - 1) * limit;
+
+    const posts = await Post.find(filter)
+      .populate("userId", "firstName lastName")
+      .select(select)
+      .sort(sortBy)
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({ results: posts.length, page, data: posts });
   } catch (error) {
     res
       .status(500)
