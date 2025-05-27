@@ -12,7 +12,7 @@ exports.getAllPosts = async (req, res) => {
       filter.title = { $regex: req.query.title, $options: "i" };
     }
 
-    // 2) Date range gte / lte
+    // Date range gte / lte
     if (req.query.startDate || req.query.endDate) {
       filter.createdAt = {};
       if (req.query.startDate)

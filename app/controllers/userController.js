@@ -34,7 +34,7 @@ exports.getAllUsers = async (req, res) => {
       filter.email = { $ne: req.query.excludeEmail };
     }
 
-    // 5) In on email ($in)
+    //  In on email ($in)
     if (req.query.emailIn) {
       filter.email = {
         ...(filter.email || {}),
