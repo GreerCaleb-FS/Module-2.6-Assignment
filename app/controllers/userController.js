@@ -60,8 +60,11 @@ exports.getAllUsers = async (req, res) => {
     const limit = Math.max(1, Number(req.query.limit) || 10);
     const skip = (page - 1) * limit;
 
+    const sortBy = req.query.sort || "-createdAt";
+
     const users = await User.find(filter)
       .select(select)
+      .sort(sortBy)
       .skip(skip)
       .limit(limit);
 
