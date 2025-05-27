@@ -1,0 +1,833 @@
+{
+  "info": {
+    "_postman_id": "88edd70f-4145-49d8-9362-509a1fda3aa6",
+    "name": "User API Intregration Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "44830777"
+  },
+  "item": [
+    {
+      "name": "Selectors Test",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Defaults",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "// 1) Status 200",
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const json = pm.response.json();",
+                      "",
+                      "// 2) Has results, page, data",
+                      "pm.test(\"Has envelope keys\", () => {",
+                      "  pm.expect(json).to.have.property(\"results\");",
+                      "  pm.expect(json).to.have.property(\"page\");",
+                      "  pm.expect(json).to.have.property(\"data\");",
+                      "  pm.expect(json.data).to.be.an(\"array\");",
+                      "});",
+                      "",
+                      "// 3) results matches data.length",
+                      "pm.test(\"results matches data length\", () => {",
+                      "  pm.expect(json.results).to.eql(json.data.length);",
+                      "});",
+                      "",
+                      "// 4) default page is 1",
+                      "pm.test(\"default page is 1\", () => {",
+                      "  pm.expect(json.page).to.eql(1);",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": ""
+                },
+                "url": {
+                  "raw": "http://localhost:3000/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["users"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GT30, no email",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const data = pm.response.json().data;",
+                      "",
+                      "// 1) Only users older than 30",
+                      "pm.test(\"All users have age > 30\", () => {",
+                      "  data.forEach(u => pm.expect(u.age).to.be.above(30));",
+                      "});",
+                      "",
+                      "// 2) email field excluded",
+                      "pm.test(\"email field is excluded\", () => {",
+                      "  data.forEach(u => pm.expect(u).to.not.have.property(\"email\"));",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/users?ageGt=30&fields=-email",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["users"],
+                  "query": [
+                    {
+                      "key": "ageGt",
+                      "value": "30"
+                    },
+                    {
+                      "key": "fields",
+                      "value": "-email"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Pagination",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const body = pm.response.json();",
+                      "",
+                      "// 1) page is 2, results is 1",
+                      "pm.test(\"page is 2\", () => pm.expect(body.page).to.eql(2));",
+                      "pm.test(\"results is 1\", () => pm.expect(body.results).to.eql(1));",
+                      "",
+                      "// 2) the single returned user is the second one (Dan)",
+                      "pm.test(\"returned user is Dan\", () => {",
+                      "  pm.expect(body.data[0].firstName).to.eql(\"Dan\");",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/users?page=2&limit=1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "2"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desc Sort",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const dates = pm.response",
+                      "  .json()",
+                      "  .data",
+                      "  .map(u => new Date(u.createdAt).getTime());",
+                      "",
+                      "// each date should be >= the next one",
+                      "pm.test(\"Dates are in descending order\", () => {",
+                      "  for (let i = 0; i < dates.length - 1; i++) {",
+                      "    pm.expect(dates[i]).to.be.at.least(dates[i + 1]);",
+                      "  }",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/users?sort=-createdAt",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["users"],
+                  "query": [
+                    {
+                      "key": "sort",
+                      "value": "-createdAt"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Posts",
+          "item": [
+            {
+              "name": "Structure and Pagination",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "// Status is OK",
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "// Parse JSON",
+                      "const json = pm.response.json();",
+                      "",
+                      "// Envelope has results, page, data",
+                      "pm.test(\"Response has results, page, data\", () => {",
+                      "  pm.expect(json).to.have.property(\"results\");",
+                      "  pm.expect(json).to.have.property(\"page\");",
+                      "  pm.expect(json).to.have.property(\"data\");",
+                      "  pm.expect(json.data).to.be.an(\"array\");",
+                      "});",
+                      "",
+                      "// results matches the number of items in data",
+                      "pm.test(\"results matches data length\", () => {",
+                      "  pm.expect(json.results).to.eql(json.data.length);",
+                      "});",
+                      "",
+                      "// default page is 1",
+                      "pm.test(\"page is 1\", () => {",
+                      "  pm.expect(json.page).to.eql(1);",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Dio was here\",\n    \"content\": \"Season 1 of JoJo's is really good.\",\n    \"userId\": \"683615efc690a7e1ca77f872\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/posts",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["posts"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Test Posts are filled out Properly",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const posts = pm.response.json().data;",
+                      "",
+                      "posts.forEach((post, idx) => {",
+                      "  pm.test(`Post #${idx + 1} has populated userId`, () => {",
+                      "    pm.expect(post).to.have.property(\"userId\");",
+                      "    pm.expect(post.userId).to.be.an(\"object\");",
+                      "    pm.expect(post.userId).to.have.all.keys(\"_id\", \"firstName\", \"lastName\");",
+                      "  });",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Dio was here\",\n    \"content\": \"Season 1 of JoJo's is really good.\",\n    \"userId\": \"683615efc690a7e1ca77f872\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/posts",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["posts"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desc Order Date",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const dates = pm.response",
+                      "  .json()",
+                      "  .data",
+                      "  .map(p => new Date(p.createdAt).getTime());",
+                      "",
+                      "// each date should be >= the next one",
+                      "pm.test(\"Dates are in descending order\", () => {",
+                      "  for (let i = 0; i < dates.length - 1; i++) {",
+                      "    pm.expect(dates[i]).to.be.at.least(dates[i + 1]);",
+                      "  }",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/posts?sort=-createdAt",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["posts"],
+                  "query": [
+                    {
+                      "key": "sort",
+                      "value": "-createdAt"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Exclude Content",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+                      "",
+                      "const json = pm.response.json();",
+                      "const data = json.data;",
+                      "",
+                      "// 1) Titles all contain “ba” (case-insensitive)",
+                      "pm.test(\"Each title contains “ba”\", () => {",
+                      "  data.forEach(post => {",
+                      "    pm.expect(post.title.toLowerCase()).to.include(\"ba\");",
+                      "  });",
+                      "});",
+                      "",
+                      "// 2) No post has a content property",
+                      "pm.test(\"Content field is excluded\", () => {",
+                      "  data.forEach(post => {",
+                      "    pm.expect(post).to.not.have.property(\"content\");",
+                      "  });",
+                      "});",
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/posts?title=ba&fields=-content",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["posts"],
+                  "query": [
+                    {
+                      "key": "title",
+                      "value": "ba"
+                    },
+                    {
+                      "key": "fields",
+                      "value": "-content"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Getall Users",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Find User by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "const user = res.data;",
+              "",
+              "// 1) 200 OK",
+              "pm.test(\"Status code is 200\", () => pm.response.to.have.status(200));",
+              "",
+              "// 2) data is an object",
+              "pm.test(\"Response data is an object\", () => {",
+              "  pm.expect(user).to.be.an(\"object\");",
+              "});",
+              "",
+              "// 3) correct _id (from the URL)",
+              "pm.test(\"Returned user has correct _id\", () => {",
+              "  // pm.request.url.path is an array like [\"users\", \"<the-id>\"]",
+              "  const pathSegments = pm.request.url.path;",
+              "  const idFromUrl = pathSegments[pathSegments.length - 1];",
+              "  pm.expect(user._id).to.eql(idFromUrl);",
+              "});",
+              "",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/users/683615efc690a7e1ca77f872",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users", "683615efc690a7e1ca77f872"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// parse the JSON response",
+              "const json = pm.response.json();",
+              "// fall back to an empty object if data is missing",
+              "const user = json.data || {};",
+              "",
+              "// 1) Status code is 200 or 201",
+              "pm.test(\"Status code is 200 or 201\", () => {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "// 2) response has a data object",
+              "pm.test(\"Response has a data object\", () => {",
+              "    pm.expect(json).to.have.property(\"data\");",
+              "    pm.expect(json.data).to.be.an(\"object\");",
+              "});",
+              "",
+              "// 3) user object has the required fields",
+              "pm.test(\"User object has required fields\", () => {",
+              "    pm.expect(user).to.include.all.keys(",
+              "        \"_id\",",
+              "        \"firstName\",",
+              "        \"lastName\",",
+              "        \"email\",",
+              "        \"age\",",
+              "        \"createdAt\"",
+              "    );",
+              "});",
+              "",
+              "// 4) save the new userId for subsequent requests (only if it exists)",
+              "if (user._id) {",
+              "    pm.environment.set(\"userId\", user._id);",
+              "}",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"firstName\": \"Jojo\",\n    \"lastName\": \"Bizarre\",\n    \"email\": \"adventure@example.com\",\n    \"age\": 36\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/users/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users", ""]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// try to parse JSON (if your DELETE returns no body, this will throw and we skip the JSON‐specific tests)",
+              "let json;",
+              "try {",
+              "    json = pm.response.json();",
+              "} catch (e) {",
+              "    json = {};",
+              "}",
+              "",
+              "// grab the deleted resource ",
+              "const deleted = json.data;",
+              "",
+              "// 1) status code is 200 or 204",
+              "pm.test(\"Status code is 200 or 204\", () => {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});",
+              "",
+              "// only run the JSON‐body tests if there *is* a body",
+              "if (pm.response.code === 200) {",
+              "    // 2) response has a data object",
+              "    pm.test(\"Response data is an object\", () => {",
+              "        pm.expect(deleted).to.be.an(\"object\");",
+              "    });",
+              "",
+              "    // 3) deleted user has the correct _id (pulled from the URL)",
+              "    pm.test(\"Deleted user has correct _id\", () => {",
+              "        const segments = pm.request.url.path;",
+              "        const idFromUrl = segments[segments.length - 1];",
+              "        pm.expect(deleted._id).to.eql(idFromUrl);",
+              "    });",
+              "",
+              "    // 4) deleted object still had all the expected fields",
+              "    pm.test(\"Deleted user object has required fields\", () => {",
+              "        pm.expect(deleted).to.include.all.keys(",
+              "            \"_id\",",
+              "            \"firstName\",",
+              "            \"lastName\",",
+              "            \"email\",",
+              "            \"age\",",
+              "            \"createdAt\"",
+              "        );",
+              "    });",
+              "}",
+              "",
+              "// 5) clean up: remove the userId env var now that it’s gone",
+              "pm.environment.unset(\"userId\");",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/users/682b5b5875185a2333b0ca5f",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users", "682b5b5875185a2333b0ca5f"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Sort by recent",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/users?sort=-createdAt",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users"],
+          "query": [
+            {
+              "key": "sort",
+              "value": "-createdAt"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Omit Email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/users?fields=-email\n",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users"],
+          "query": [
+            {
+              "key": "fields",
+              "value": "-email\n"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Sorted between Ages",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/users?minAge=25&maxAge=40",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["users"],
+          "query": [
+            {
+              "key": "minAge",
+              "value": "25"
+            },
+            {
+              "key": "maxAge",
+              "value": "40"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GetAll Posts",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/posts",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["posts"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Example Post for Post Collection",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Dio was here\",\n    \"content\": \"Season 1 of JoJo's is really good.\",\n    \"userId\": \"683615efc690a7e1ca77f872\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/posts",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["posts"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
