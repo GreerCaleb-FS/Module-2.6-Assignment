@@ -7,6 +7,11 @@ exports.getAllPosts = async (req, res) => {
     // Build filter
     const filter = {};
 
+    // Filter by userId
+    if (req.query.userId) {
+      filter.userId = req.query.userId;
+    }
+
     //Regex on title
     if (req.query.title) {
       filter.title = { $regex: req.query.title, $options: "i" };
