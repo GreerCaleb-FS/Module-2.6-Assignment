@@ -1,8 +1,8 @@
-# Module 3.4 Assignment
+# Module 4.6 Assignment
 
 # Assignment Breakdown
 
-Two Collections:
+Two Collections: Users and Posts that are displayed on the front end.
 
 ###
 
@@ -10,8 +10,8 @@ User and Post. Approriate methods and routes for each collection.
 
 # How it Functions
 
-The app contains two collections that are linked together through an ID after the user has been created. Proper queries added allow you to sort or filter, and it also contains proper pagination. Sort is also added to view based on recently created or oldest respectively.
+The app contains two collections that are linked together through an ID after the user has been created. What is being displayed will be a list of all the users. After you have clicked on a User, it will display all of their posts along with information related to that post such as date created.
 
-# npm start then node app.js
+# How to Get it Going
 
-Type that to get it going.
+Run node app.js in server terminal. Afterwords have another terminal for the client side. Cd Client, then npm run dev.
